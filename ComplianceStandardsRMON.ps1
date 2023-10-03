@@ -7,3 +7,6 @@ Read-Host "216.2.5 Ensure Office 365 SharePoint Infected files are disallowed fo
 $adminsite = Read-Host "Please enter the prefix for the Sharepoint admin site: "
 Connect-SPOService -url https://$adminsite-admin.sharepoint.com
 Get-SPOTenant | Select-Object DisallowInfectedFileDownload
+Read-Host "230.3.8 Ensure that Microsoft Teams is using OneDrive for Business and SharePoint for meeting recordings"
+Connect-MicrosoftTeams
+Get-CsTeamsMeetingPolicy -identity global | fl RecordingStorageMode
