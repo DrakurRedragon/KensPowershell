@@ -1,4 +1,4 @@
-Read-Host "This will assist in the generation of results for Standards Audit."
+Write-Host "This will assist in the generation of results for Standards Audit."
 Read-Host "207.1.2 Ensure Modern Authentication for Exchange Online is Enabled and 239.4.9 Ensure Bastic Authentication for Exchange online is disabled"
 $org = Read-Host "Please enter the organization: "
 Connect-ExchangeOnline -Organization $org
@@ -14,3 +14,5 @@ Get-CsTeamsMeetingPolicy -identity global | fl RecordingStorageMode
 Read-Host "234.4.4 Ensure Automatic Forwarding Options are disabled"
 Connect-ExchangeOnline -Organization $org
 Get-RemoteDomain Default | fl AllowedOOFType, AutoForwardEnabled
+Read-Host "244.4.15 Ensure MAiltips are enabled for end users"
+Get-OrganizationConfig |Select-Object MailTipsAllTipsEnabled, MailTipsExternalRecipientsTipsEnabled, MailTipsGroupMetricsEnabled, MailTipsLargeAudienceThreshold
