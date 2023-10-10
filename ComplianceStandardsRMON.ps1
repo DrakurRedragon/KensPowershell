@@ -1,11 +1,14 @@
 Write-Host "This will assist in the generation of results for Standards Audit."
 Start-Sleep -Seconds 1.5
-Write-Host "207.1.2 Ensure Modern Authentication for Exchange Online is Enabled and 239.4.9 Ensure Bastic Authentication for Exchange online is disabled"
+Write-Host "207.1.2 Ensure Modern Authentication for Exchange Online is Enabled and 239.4.9 Ensure Basic Authentication for Exchange online is disabled"
 Start-Sleep -Seconds 1.5
 $org = Read-Host "Please enter the organization: "
 Connect-ExchangeOnline -Organization $org
 get-organizationconfig | format-table -auto name, OAuth*
 Get-User -ResultSize Unlimited | Select-Object UserPrincipalName, AuthenticationPolicy
+Read-Host -Prompt "Press any key to continue"
+Write-Host "4.17 SMTP AUTH SHALL be disabled."
+Get-TransportConfig | Format-List SmtpClientAuthenticationDisabled
 Read-Host -Prompt "Press any key to continue"
 Write-Host "216.2.5 Ensure Office 365 SharePoint Infected files are disallowed for download."
 Start-Sleep -Seconds 1.5
