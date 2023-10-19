@@ -54,8 +54,8 @@ Start-Sleep -Seconds 1.5
 get-organizationconfig | format-table -auto name, OAuth*
 Write-Host "Verify that the policy is true."
 Read-Host -Prompt "Press any key to continue"
-Get-User -ResultSize Unlimited | Select-Object UserPrincipalName, AuthenticationPolicy
-Write-Host "Verify no user has a different authentication policy set."
+Get-User -ResultSize Unlimited | Select-Object UserPrincipalName, AuthenticationPolicy | Where-Object -Property AuthenticationPolicy -ne $null
+Write-Host "Verify no user has a different authentication policy set.  If it doesn't return anything, then no user has that property set."
 Read-Host -Prompt "Press any key to continue"
 Write-Host "Ensure Modern Authentication for SharePoint Applications is required."
 Get-SPOTenant | Select-Object LegacyAuthProtocolsEnabled
@@ -86,6 +86,13 @@ Write-Host "2.5 Ensure Office 365 SharePoint Infected files are disallowed for d
 Start-Sleep -Seconds 1.5
 Get-SPOTenant | Select-Object DisallowInfectedFileDownload
 Read-Host -Prompt "Press any key to continue"
+#2.6 Not yet supported
+#2.7 Not yet supported
+Write-Host "2.8 Ensure Office 365 SharePoint Infected files are disallowed for download."
+Start-Sleep -Seconds 1.5
+Get-RoleAssignmentPolicy | Where-Object -property Name -eq "Default Role Assignment Policy" | Select-Object -ExpandProperty AssignedRoles
+Write-Host "Verify that My Custom Apps, My Marketplace Apps, and My ReadWriteMailbox Apps are NOT present in the list."
+Read-Host -Prompt "Press any key to continue"
 
 # This is the 3.x series of questions, Data Management
 
@@ -96,14 +103,99 @@ Read-Host -Prompt "Press any key to continue"
 
 # This is the 4.x series of questions, Email Security
 
+Write-Host "4.1 Ensure the Common Attachment Types Filter is enabled"
+Start-Sleep -Seconds 1.5
+Get-MalwareFilterPolicy | Select-Object -Property ID,FileTypeAction,FileTypes
+Read-Host -Prompt "Press any key to continue"
+
+#4.2 Ensure Exchange Online Spam Policies are set correctly
+
+Write-Host "4.2.1 IP Allow Lists are NOT present for Spam"
+Start-Sleep -Seconds 1.5
+Get-HostedConnectionFilterPolicy | Select-Object Name,IPAllowList
+Write-Host "Verify that no IP Addresses exist in the list."
+Read-Host -Prompt "Press any key to continue"
+
+#4.3 Ensure mail transport rules do not forward email to external domains
+
 Write-Host "4.4 Ensure Automatic Forwarding Options are disabled"
 Start-Sleep -Seconds 1.5
 Get-RemoteDomain Default | fl AllowedOOFType, AutoForwardEnabled
 Read-Host -Prompt "Press any key to continue"
+
+Write-Host "4.7 Ensure the Advanced Threat Protection Safe Links policy is enabled"
+Start-Sleep -Seconds 1.5
+get-safelinkspolicy | select-object -property ID,AllowClickThrough,EnableForInternalSenders
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "4.8 Ensure the Advanced Threat Protection Safe Attachments policy is enabled"
+Start-Sleep -Seconds 1.5
+Get-SafeAttachmentRule
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "4.9 Ensure Basic Authentication for Exchange online is disabled"
+Start-Sleep -Seconds 1.5
+get-organizationconfig | format-table -auto name, OAuth*
+Write-Host "Verify that the policy is true."
+Read-Host -Prompt "Press any key to continue"
+Get-User -ResultSize Unlimited | Select-Object UserPrincipalName, AuthenticationPolicy | Where-Object -Property AuthenticationPolicy -ne $null
+Write-Host "Verify no user has a different authentication policy set.  If it doesn't return anything, then no user has that property set."
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "4.10 Ensure that an anti-phishing policy has been created"
+Start-Sleep -Seconds 1.5
+Get-AntiPhishPolicy | Select-Object -property ID
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "4.11 Ensure that DKIM is enabled for all Exchange Online Domains"
+Start-Sleep -Seconds 1.5
+Get-DkimSigningConfig
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "4.12 Ensure SPF Records are published for Exchange domains."
+Start-Sleep -Seconds 1.5
+nslookup -type=txt $Dom
+Write-Host "Verify there is an entry for SPF."
+$addDomyn = Read-Host -Prompt "Are there additional domains?  Y or N?"
+if ($addDomyn -eq 'y')
+{
+    do {
+        $addDom = Read-Host -Prompt "Enter additional mail domains to search."
+        nslookup -type=txt $addDom
+        $quit = Read-Host -Prompt "Do you have any other domains to search?  Y or N?"
+        } while ($quit -eq 'y')
+}
+Read-Host -prompt "Press any key to continue"
+
+Write-Host "4.13 Ensure DMARC Records for all Exchange Online domains are published"
+nslookup -type=txt _dmarc.$Dom
+Write-Host "Verify there is an entry for v=DMARC1."
+$addDomyn = Read-Host -Prompt "Are there additional domains?  Y or N?"
+if ($addDomyn -eq 'y')
+{
+    do {
+        $addDom = Read-Host -Prompt "Enter additional mail domains to search."
+        nslookup -type=txt _dmarc.$addDom
+        $quit = Read-Host -Prompt "Do you have any other domains to search?  Y or N?"
+        } while ($quit -eq 'y')
+}
+Read-Host -prompt "Press any key to continue"
+
+Write-Host "4.14 Ensure notifications for internal users sending malware is Enabled"
+Get-MalwareFilterPolicy | Select-Object -Property ID,EnableInternalSenderAdminNotifications,InternalSenderAdminAddress
+Read-Host -Prompt "Press any key to continue"
+
 Write-Host "4.15 Ensure Mailtips are enabled for end users"
 Start-Sleep -Seconds 1.5
 Get-OrganizationConfig | Select-Object MailTipsAllTipsEnabled, MailTipsExternalRecipientsTipsEnabled, MailTipsGroupMetricsEnabled, MailTipsLargeAudienceThreshold
 Read-Host -Prompt "Press any key to continue"
+
+Write-Host "4.16 Set spam policy to quarantine messages - not deliver to junk mail"
+Get-HostedContentFilterRule
+Get-HostedContentFilterPolicy | Select-Object -property ID,SpamAction,PhishSpamAction,BulkSpamAction,HighConfidencePhishAction
+Write-Host "Verify that the policies with the same name as the rules have the appropriate settings."
+Read-Host -Prompt "Press any key to continue"
+
 Write-Host "4.17 SMTP AUTH SHALL be disabled."
 Get-TransportConfig | Format-List SmtpClientAuthenticationDisabled
 Read-Host -Prompt "Press any key to continue"
@@ -116,7 +208,5 @@ Write-Host "6.4 Ensure external storage providers available in Outlook on the We
 Start-Sleep -Seconds 1.5
 Get-OwaMailboxPolicy | Format-Table Name, AdditionalStorageProvidersAvailable
 Read-Host -Prompt "Press any key to continue"
-
-# The 7.x questions are still under review by the Standards Committee
 
 # This is the 8.x series of questions for Teams
