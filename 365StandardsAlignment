@@ -1,4 +1,11 @@
 # This is the start of the Script.  It will specify al of the connections and establish the variables.
+# Make sure you have the following modules installed to be able to run this script.
+# Install-Module -Name Microsoft.Online.SharePoint.PowerShell -scope CurrentUser
+# install-module msonline -scope CurrentUser
+# install-module ExchangeOnlineManagement -scope CurrentUser
+# install-module microsoftteams -scope CurrentUser
+# install-module azuread -scope currentuser
+
 
 Write-Host "You will prompted to log in several times.  Use a Global Administrator account for the login."
 Read-Host "The script will pause to make sure you have access to the Global Adminstrator Account.  Press Enter when ready."
@@ -9,7 +16,7 @@ Write-Host "Connecting to Microsoft Teams...This may take a few moments."
 Connect-MicrosoftTeams
 Write-Host "Connected"
 Write-Host "Connecting to Exchange Online...This may take a few moments."
-Connect-ExchangeOnline
+Connect-ExchangeOnline -ShowBanner:$false
 Write-Host "Connected"
 Write-Host "Connecting to MSOL Service...This may take a few moments."
 Write-Host "Connected"
@@ -66,6 +73,14 @@ Write-Host "2.2 Ensure Calendar Details sharing with External Users is disabled.
 Start-Sleep -Seconds 1.5
 get-SharingPolicy | Where-object -property Default -eq True | Format-List -Property Domains
 Write-Host -Prompt "Look for Anonymous: in the Domains list.  If it is present and has any properties, external sharing is not disabled."
+Read-Host -Prompt "Press any key to continue"
+Write-Host "2.3 Ensure Defender for Office 365 SafeLinks for Office Applications is enabled."
+Start-Sleep -Seconds 1.5
+get-safelinkspolicy | select-object -property ID,EnableSafeLinksforEmail,EnableSafeLinksforTeams,EnableSafeLinksforOffice
+Read-Host -Prompt "Press any key to continue"
+Write-Host "2.4 Ensure Defender for Office 365 for SharePoint, OneDrive, and Microsoft Teams is Enabled"
+Start-Sleep -Seconds 1.5
+get-atppolicyforo365 | select-object -property ID,EnableATPForSPOTeamsODB,EnableSafeDocs
 Read-Host -Prompt "Press any key to continue"
 Write-Host "2.5 Ensure Office 365 SharePoint Infected files are disallowed for download."
 Start-Sleep -Seconds 1.5
