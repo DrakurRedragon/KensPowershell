@@ -29,79 +29,129 @@ Write-Host "Connected"
 Write-Host "We will need to gather information to move forward; these will assist in various places within the script."
 $Dom = Read-Host "Enter the FQDN: "
 
+# =============================================
 # It starts with the 1.x series of questions for Azure Active Directory
+# =============================================
 # Questions not in this script: 1.1.7-15
+# =============================================
+
 Write-Host "Microsoft 365 Verification Script for Standards Alignment"
+
 Write-Host "Verifying 1.1.1.1, 1.1.2.1 for MFA, 1.1.1.2 for Persistent Browser Session and 1.1.6 for legacy authentication."
 Start-Sleep -Seconds 1.5
 Get-AzureADMSConditionalAccessPolicy
 Read-Host -Prompt "Press any key to continue"
+
 Write-Host "Verifying Global Administrators, 1.1.3.1 and Cloud Only admin accounts, 1.1.3.2"
 Start-Sleep -Seconds 1.5
 $role = Get-AzureADDirectoryRole | Where-Object {$_.displayName -eq 'Global Administrator'}
 Get-AzureADDirectoryRoleMember -ObjectId $role.ObjectId | Select-Object -property UserPrincipalName,DirSyncEnabled
 Read-Host -Prompt "Press any key to continue"
+
 Write-Host "Verifying SSPR is enabled, 1.1.4"
 Start-Sleep -Seconds 1.5
 Get-AzureADMSAuthorizationPolicy | Select-Object -Property AllowedToUseSSPR
 Read-Host -Prompt "Press any key to continue"
 
+# 1.1.7 is not supported.
+
+# 1.1.8 is not supported.
+
+# 1.1.9 is not supported.
+
+# 1.1.10 is not supported.
+
+# 1.1.11 is not supported.
+
+# 1.1.12 is not supported.
+
+# 1.1.13 is not supported.
+
+# 1.1.14 is not supported.
+
+# 1.1.15 is not supported.
+
+# =============================================
 # This is a continuation of the 1.x questions, Modern Authentication.
+# =============================================
 # This section is complete.
+# =============================================
 
 Write-Host "1.2 Ensure Modern Authentication for Exchange Online is Enabled and 4.9 Ensure Basic Authentication for Exchange online is disabled"
 Start-Sleep -Seconds 1.5
 get-organizationconfig | format-table -auto name, OAuth*
 Write-Host "Verify that the policy is true."
 Read-Host -Prompt "Press any key to continue"
+
 Get-User -ResultSize Unlimited | Select-Object UserPrincipalName, AuthenticationPolicy | Where-Object -Property AuthenticationPolicy -ne $null
 Write-Host "Verify no user has a different authentication policy set.  If it doesn't return anything, then no user has that property set."
 Read-Host -Prompt "Press any key to continue"
+
 Write-Host "Ensure Modern Authentication for SharePoint Applications is required."
 Get-SPOTenant | Select-Object LegacyAuthProtocolsEnabled
 Read-Host -Prompt "Press any key to continue"
+
 Write-Host "1.4 Microsoft 365 Passwords are set not to expire.  Validity period of 2147483647 means this is set."
 get-msolpasswordpolicy -domain $Dom
 Read-Host -Prompt "Press any key to continue"
+
 Write-Host "1.5 Password Minimum Requirements, 12+ characters"
 Get-ADDefaultDomainPasswordPolicy
 Read-Host -Prompt "Press any key to continue"
 
+# =============================================
 # This is the 2.x series of questions, Application Permissions
+# =============================================
 
 Write-Host "2.2 Ensure Calendar Details sharing with External Users is disabled."
 Start-Sleep -Seconds 1.5
 get-SharingPolicy | Where-object -property Default -eq True | Format-List -Property Domains
 Write-Host -Prompt "Look for Anonymous: in the Domains list.  If it is present and has any properties, external sharing is not disabled."
 Read-Host -Prompt "Press any key to continue"
+
 Write-Host "2.3 Ensure Defender for Office 365 SafeLinks for Office Applications is enabled."
 Start-Sleep -Seconds 1.5
 get-safelinkspolicy | select-object -property ID,EnableSafeLinksforEmail,EnableSafeLinksforTeams,EnableSafeLinksforOffice
 Read-Host -Prompt "Press any key to continue"
+
 Write-Host "2.4 Ensure Defender for Office 365 for SharePoint, OneDrive, and Microsoft Teams is Enabled"
 Start-Sleep -Seconds 1.5
 get-atppolicyforo365 | select-object -property ID,EnableATPForSPOTeamsODB,EnableSafeDocs
 Read-Host -Prompt "Press any key to continue"
+
 Write-Host "2.5 Ensure Office 365 SharePoint Infected files are disallowed for download."
 Start-Sleep -Seconds 1.5
 Get-SPOTenant | Select-Object DisallowInfectedFileDownload
 Read-Host -Prompt "Press any key to continue"
+
 #2.6 Not yet supported
+
 #2.7 Not yet supported
-Write-Host "2.8 Ensure Office 365 SharePoint Infected files are disallowed for download."
+
+Write-Host "2.8 Ensure users installing Outlook add-ins is not allowedge."
 Start-Sleep -Seconds 1.5
 Get-RoleAssignmentPolicy | Where-Object -property Name -eq "Default Role Assignment Policy" | Select-Object -ExpandProperty AssignedRoles
 Write-Host "Verify that My Custom Apps, My Marketplace Apps, and My ReadWriteMailbox Apps are NOT present in the list."
 Read-Host -Prompt "Press any key to continue"
 
+# 2.9 Ensure users installing Word, Excel, Powerpoint is not allowed.
+
+# 2.10 Ensure Internal Phishing for Forms is enabled.
+
+# 2.11 Ensure that Sways cannot be shared with people outside the organization
+
+# =============================================
 # This is the 3.x series of questions, Data Management
+# =============================================
 
 Write-Host "3.8 Ensure that Microsoft Teams is using OneDrive for Business and SharePoint for meeting recordings"
 Start-Sleep -Seconds 1.5
 Get-CsTeamsMeetingPolicy -identity global | fl RecordingStorageMode
 Read-Host -Prompt "Press any key to continue"
 
+# =============================================
 # This is the 4.x series of questions, Email Security
+# =============================================
 
 Write-Host "4.1 Ensure the Common Attachment Types Filter is enabled"
 Start-Sleep -Seconds 1.5
@@ -116,11 +166,27 @@ Get-HostedConnectionFilterPolicy | Select-Object Name,IPAllowList
 Write-Host "Verify that no IP Addresses exist in the list."
 Read-Host -Prompt "Press any key to continue"
 
-#4.3 Ensure mail transport rules do not forward email to external domains
+Write-Host "4.3 Ensure mail transport rules do not forward email to external domains"
+Start-Sleep -Seconds 1.5
+Get-TransportRule | Select-Object -Property Name,Description | Format-List
+Write-Host "Verify that there are no auto-forwarding rules"
+Read-Host -Prompt "Press any key to continue"
 
 Write-Host "4.4 Ensure Automatic Forwarding Options are disabled"
 Start-Sleep -Seconds 1.5
 Get-RemoteDomain Default | fl AllowedOOFType, AutoForwardEnabled
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "4.5 Ensure mail transport rules do not whitelist specific domains"
+Start-Sleep -Seconds 1.5
+Get-TransportRule | Select-Object -Property Name,Description | Format-List
+Write-Host "Verify that there are no rules that whitelist domains."
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "4.6 Ensure the Client Rules Forwarding Block is enabled"
+Start-Sleep -Seconds 1.5
+Get-TransportRule | Select-Object -Property Name,Description | Format-List
+Write-Host "Verify that one of these blocks auto forwards from internal to external senders"
 Read-Host -Prompt "Press any key to continue"
 
 Write-Host "4.7 Ensure the Advanced Threat Protection Safe Links policy is enabled"
@@ -182,6 +248,7 @@ if ($addDomyn -eq 'y')
 Read-Host -prompt "Press any key to continue"
 
 Write-Host "4.14 Ensure notifications for internal users sending malware is Enabled"
+Start-Sleep -Seconds 1.5
 Get-MalwareFilterPolicy | Select-Object -Property ID,EnableInternalSenderAdminNotifications,InternalSenderAdminAddress
 Read-Host -Prompt "Press any key to continue"
 
@@ -191,22 +258,41 @@ Get-OrganizationConfig | Select-Object MailTipsAllTipsEnabled, MailTipsExternalR
 Read-Host -Prompt "Press any key to continue"
 
 Write-Host "4.16 Set spam policy to quarantine messages - not deliver to junk mail"
+Start-Sleep -Seconds 1.5
 Get-HostedContentFilterRule
 Get-HostedContentFilterPolicy | Select-Object -property ID,SpamAction,PhishSpamAction,BulkSpamAction,HighConfidencePhishAction
 Write-Host "Verify that the policies with the same name as the rules have the appropriate settings."
 Read-Host -Prompt "Press any key to continue"
 
 Write-Host "4.17 SMTP AUTH SHALL be disabled."
+Start-Sleep -Seconds 1.5
 Get-TransportConfig | Format-List SmtpClientAuthenticationDisabled
 Read-Host -Prompt "Press any key to continue"
 
-# This is the 5.x series of questions, Auditing
+Write-Host "4.18 Email Encryption Policy is Configured"
+Start-Sleep -Seconds 1.5
+Get-IRMConfiguration | Select-Object -Property AzureRMSLicensingEnabled
+Get-TransportRule
+Read-Host -Prompt "Press any key to continue"
 
+Write-Host "4.19 Enhanced Filtering is turned on for 3rd Party email filtering tools"
+Start-Sleep -Seconds 1.5
+Get-InboundConnector | Select-Object -Property Name,EFSkipLastIP,EFSkipIPs
+Read-Host -Prompt "Press any key to continue"
+
+# =============================================
+# This is the 5.x series of questions, Auditing
+# =============================================
+
+# =============================================
 # This is the 6.x Series of Questions, Storage
+# =============================================
 
 Write-Host "6.4 Ensure external storage providers available in Outlook on the Web are restricted"
 Start-Sleep -Seconds 1.5
 Get-OwaMailboxPolicy | Format-Table Name, AdditionalStorageProvidersAvailable
 Read-Host -Prompt "Press any key to continue"
 
+# =============================================
 # This is the 8.x series of questions for Teams
+# =============================================
