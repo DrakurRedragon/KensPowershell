@@ -22,6 +22,9 @@ Write-Host "Connecting to MSOL Service...This may take a few moments."
 Write-Host "Connected"
 Connect-MsolService
 Write-Host "Connected"
+Write-Host "Connecting to Information Protection...This may take a few moments."
+Connect-IPPSSession
+Write-Host "Connected"
 $adminsite = Read-Host "Please enter the prefix for the Sharepoint admin site: "
 Write-Host "Connecting to Sharepoint Online Admin...This may take a few moments."
 Connect-SPOService -url https://$adminsite-admin.sharepoint.com
@@ -87,7 +90,7 @@ Get-User -ResultSize Unlimited | Select-Object UserPrincipalName, Authentication
 Write-Host "Verify no user has a different authentication policy set.  If it doesn't return anything, then no user has that property set."
 Read-Host -Prompt "Press any key to continue"
 
-Write-Host "Ensure Modern Authentication for SharePoint Applications is required."
+Write-Host "1.3 Ensure Modern Authentication for SharePoint Applications is required."
 Get-SPOTenant | Select-Object LegacyAuthProtocolsEnabled
 Read-Host -Prompt "Press any key to continue"
 
@@ -143,6 +146,43 @@ Read-Host -Prompt "Press any key to continue"
 # =============================================
 # This is the 3.x series of questions, Data Management
 # =============================================
+# This section is complete.
+# =============================================
+
+Write-Host "3.1 Ensure the customer lockbox feature is enabled"
+Start-Sleep -Seconds 1.5
+get-organizationconfig | select-object -property CustomerLockboxEnabled
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "3.2 Ensure SharePoint Online data classification policies are set up and used"
+Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property EnableAIPIntegration
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "3.3 Ensure external users are not allowed in Skype or Teams"
+Start-Sleep -Seconds 1.5
+Get-CsTeamsClientConfiguration | Select-Object -Property AllowGuestUser
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "3.4 Ensure DLP policies are enabled"
+Start-Sleep -Seconds 1.5
+Get-DlpCompliancePolicy | Select-Object DisplayName,Enabled
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "3.5 Ensure DLP policies are enabled for Microsoft Teams"
+Start-Sleep -Seconds 1.5
+Get-DlpCompliancePolicy | Select-Object DisplayName,Enabled,Workload
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "3.6 Ensure that external users cannot share files, folders, and sites they do not own"
+Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property PreventExternalUsersFromResharing
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "3.7 Ensure external file sharing in Teams is enabled for only approved cloud storage services"
+Start-Sleep -Seconds 1.5
+Get-CsTeamsClientConfiguration | Select-Object -Property AllowDropbox,AllowBox,AllowGoogleDrive,AllowShareFile,AllowEgnyte
+Read-Host -Prompt "Press any key to continue"
 
 Write-Host "3.8 Ensure that Microsoft Teams is using OneDrive for Business and SharePoint for meeting recordings"
 Start-Sleep -Seconds 1.5
@@ -152,13 +192,18 @@ Read-Host -Prompt "Press any key to continue"
 # =============================================
 # This is the 4.x series of questions, Email Security
 # =============================================
+# This section is complete.
+# =============================================
 
 Write-Host "4.1 Ensure the Common Attachment Types Filter is enabled"
 Start-Sleep -Seconds 1.5
 Get-MalwareFilterPolicy | Select-Object -Property ID,FileTypeAction,FileTypes
 Read-Host -Prompt "Press any key to continue"
 
-#4.2 Ensure Exchange Online Spam Policies are set correctly
+Write-Host "Ensure Exchange Online Spam Policies are set correctly"
+Start-Sleep -Seconds 1.5
+get-hostedoutboundspamfilterpolicy | Select-Object -Property ID,BccSuspiciousOutboundMail,BccSuspiciousOutboundAdditionalRecipients,NotifyOutboundSpam,NotifyOutboundSpamRecipients
+Read-Host -Prompt "Press any key to continue"
 
 Write-Host "4.2.1 IP Allow Lists are NOT present for Spam"
 Start-Sleep -Seconds 1.5
@@ -285,12 +330,51 @@ Read-Host -Prompt "Press any key to continue"
 # =============================================
 
 # =============================================
-# This is the 6.x Series of Questions, Storage
+# This is the 6.x Series of Questions, Storage 
 # =============================================
+# This section is complete.                    
+# =============================================
+
+Write-Host "6.1 Ensure document sharing is being controlled by domains with allow list or deny list"
+Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property SharingAllowedDomainList, SharingBlockedDomainList, SharingdomainRestrictionMode
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "6.2 Block OneDrive for Business sync from unmanaged devices"
+Start-Sleep -Seconds 1.5
+Get-SPOTenantSyncClientRestriction | Select-Object -Property TenantRestrictionEnabled, AllowedDomainList
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "6.3 Ensure expiration time for external sharing links is set"
+Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property ExternalUserExpirationRequired, ExternalUserExpireInDays
+Read-Host -Prompt "Press any key to continue"
 
 Write-Host "6.4 Ensure external storage providers available in Outlook on the Web are restricted"
 Start-Sleep -Seconds 1.5
 Get-OwaMailboxPolicy | Format-Table Name, AdditionalStorageProvidersAvailable
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "6.5 File and Folder Links default Sharing Settings SHALL be set to 'Specific People'"
+Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property DefaultSharingLinkType
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "6.6.1 Anyone Links SHOULD be turned Off"
+Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property SharingCapability
+Write-Host "If the Value is ExternalUserandGuestSharing, it allows Anyone links,"
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "6.6.2 If Enabled, Anyone Links SHOULD be set to View by default"
+Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property FileAnonymousLinkType, FolderAnonymousLinkType
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "6.7 Users SHALL Be Prevented from Running Custom Scripts"
+Start-Sleep -Seconds 1.5
+Get-SPOSite -identity https://$adminsite.sharepoint.com | Select-Object -Property DenyAddAndCustomizePages
+Write-Host "This setting should be Enabled.  That means it is denying the custom scripts from running."
 Read-Host -Prompt "Press any key to continue"
 
 # =============================================
