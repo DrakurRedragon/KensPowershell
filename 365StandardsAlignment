@@ -127,9 +127,9 @@ Start-Sleep -Seconds 1.5
 Get-SPOTenant | Select-Object DisallowInfectedFileDownload
 Read-Host -Prompt "Press any key to continue"
 
-#2.6 Not yet supported
+# 2.6 Ensure user consent to apps accessing company data on their behalf is not allowed
 
-#2.7 Not yet supported
+# 2.7 Ensure the admin consent workflow is enabled
 
 Write-Host "2.8 Ensure users installing Outlook add-ins is not allowedge."
 Start-Sleep -Seconds 1.5
@@ -380,3 +380,63 @@ Read-Host -Prompt "Press any key to continue"
 # =============================================
 # This is the 8.x series of questions for Teams
 # =============================================
+
+Write-Host "8.1 Private channels shall be utilized to restrict access to sensitive information"
+Start-Sleep -Seconds 1.5
+Get-Team | Where-Object -Property Visibility -eq "Public"
+Write-Host "Verify those public teams to make sure that they are not sensitive"
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "8.2 External Participants SHOULD NOT be allowed to request control"
+Start-Sleep -Seconds 1.5
+Get-CsTeamsMeetingPolicy | Where-Object -Property Identity -eq "Global" | Select-Object -Property AllowExternalParticipantGiveRequestControl
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "8.3 Anonymous Users SHALL NOT be enabled to start meetings"
+Start-Sleep -Seconds 1.5
+Get-CsTeamsMeetingPolicy | Where-Object -Property Identity -eq "Global" | Select-Object -Property AllowAnonymousUsersToStartMeeting
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "8.4 Automatic Admittance to meetings SHOULD be restricted"
+Start-Sleep -Seconds 1.5
+Get-CsTeamsMeetingPolicy | Where-Object -Property Identity -eq "Global" | Select-Object -Property AutoAdmittedUsers
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "8.5 External User Access SHALL be restricted"
+Start-Sleep -Seconds 1.5
+Get-CSTenantFederationConfiguration | Select-Object -Property AllowedDomains
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "8.6.1 Unmanaged Users SHALL NOT be able to initiatie contact with internal users"
+Start-Sleep -Seconds 1.5
+Get-CSTenantFederationConfiguration | Select-Object -Property AllowTeamsConsumerInbound
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "8.6.2 Unmanaged Users SHOULD not be able to be contacted by internal users"
+Start-Sleep -Seconds 1.5
+Get-CSTenantFederationConfiguration | Select-Object -Property AllowTeamsConsumer
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "8.7 Contact with Skype Users SHALL be Disabled"
+Start-Sleep -Seconds 1.5
+Get-CSTenantFederationConfiguration | Select-Object -Property AllowPublicUSers
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "8.8 Teams Email Integration SHALL be disabled"
+Start-Sleep -Seconds 1.5
+Get-CsTeamsClientConfiguration | Select-Object -Property AllowEmailIntoChannel
+Read-Host -Prompt "Press any key to continue"
+
+Write-Host "8.9 Only Approved Apps should be installed"
+Start-Sleep -Seconds 1.5
+Get-CsTeamsAppPermissionPolicy
+Read-Host -Prompt "Press any key to continue"
+
+# 8.10 Only the Meeting Organizer should be able to record live events
+
+Write-Host "8.11 Creation of new Teams Channels is restricted"
+Start-Sleep -Seconds 1.5
+Get-CsTeamsChannelPolicy
+Read-Host -Prompt "Press any key to continue"
+
+# 8.12 Teams Channels have an expiration policy
