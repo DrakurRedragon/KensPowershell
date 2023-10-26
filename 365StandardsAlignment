@@ -329,6 +329,15 @@ Read-Host -Prompt "Press any key to continue"
 # This is the 5.x series of questions, Auditing
 # =============================================
 
+
+#5.1 
+Get-AdminAuditLogConfig | Select-Object -Property AdminAuditLogEnabled
+
+#5.2 Mailbox auditing (list of unaudited mailboxes)
+Get-Mailbox -ResultSize Unlimited | Where-Object {$_.AuditEnabled -ne $true - and ($_.RecipientTypeDetails -ne "UserMailbox" -or $_.RecipientTypeDetails - ne "SharedMailbox")}
+
+
+
 # =============================================
 # This is the 6.x Series of Questions, Storage 
 # =============================================
@@ -379,6 +388,8 @@ Read-Host -Prompt "Press any key to continue"
 
 # =============================================
 # This is the 8.x series of questions for Teams
+# =============================================
+# This section is complete.                    
 # =============================================
 
 Write-Host "8.1 Private channels shall be utilized to restrict access to sensitive information"
@@ -432,11 +443,18 @@ Start-Sleep -Seconds 1.5
 Get-CsTeamsAppPermissionPolicy
 Read-Host -Prompt "Press any key to continue"
 
-# 8.10 Only the Meeting Organizer should be able to record live events
+Write-Host "8.10 Only the Meeting Organizer should be able to record live events"
+Start-Sleep -Seconds 1.5
+Get-CsTeamsMeetingBroadcastPolicy | Select-Object -Property Identity,BroadcastRecordingMode
+Write-Host "The setting should be in UserOverride"
+Read-Host -Prompt "Press any key to continue"
 
 Write-Host "8.11 Creation of new Teams Channels is restricted"
 Start-Sleep -Seconds 1.5
 Get-CsTeamsChannelPolicy
 Read-Host -Prompt "Press any key to continue"
 
-# 8.12 Teams Channels have an expiration policy
+Write-Host "8.12 Teams Channels have an expiration policy"
+Start-Sleep -Seconds 1.5
+Get-AzureADMSGroupLifecyclePolicy
+Read-Host -Prompt "Press any key to continue"
