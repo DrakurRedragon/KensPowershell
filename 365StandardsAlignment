@@ -7,30 +7,31 @@
 # install-module azuread -scope currentuser
 
 
-Write-Host "You will prompted to log in several times.  Use a Global Administrator account for the login."
-Read-Host "The script will pause to make sure you have access to the Global Adminstrator Account.  Press Enter when ready."
-Write-Host "Connecting to Azure AD...This may take a few moments."
+Write-Output "You will prompted to log in several times.  Use a Global Administrator account for the login."
+#Read-Host "The script will pause to make sure you have access to the Global Adminstrator Account.  Press Enter when ready."
+Write-Output "Connecting to Azure AD...This may take a few moments."
 Connect-AzureAD
-Write-Host "Connected"
-Write-Host "Connecting to Microsoft Teams...This may take a few moments."
+Write-Output "Connected"
+Write-Output "Connecting to Microsoft Teams...This may take a few moments."
 Connect-MicrosoftTeams
-Write-Host "Connected"
-Write-Host "Connecting to Exchange Online...This may take a few moments."
+Write-Output "Connected"
+Write-Output "Connecting to Exchange Online...This may take a few moments."
 Connect-ExchangeOnline -ShowBanner:$false
-Write-Host "Connected"
-Write-Host "Connecting to MSOL Service...This may take a few moments."
-Write-Host "Connected"
+Write-Output "Connected"
+Write-Output "Connecting to MSOL Service...This may take a few moments."
+Write-Output "Connected"
 Connect-MsolService
-Write-Host "Connected"
-Write-Host "Connecting to Information Protection...This may take a few moments."
+Write-Output "Connected"
+Write-Output "Connecting to Information Protection...This may take a few moments."
 Connect-IPPSSession
-Write-Host "Connected"
+Write-Output "Connected"
 $adminsite = Read-Host "Please enter the prefix for the Sharepoint admin site: "
-Write-Host "Connecting to Sharepoint Online Admin...This may take a few moments."
+Write-Output "Connecting to Sharepoint Online Admin...This may take a few moments."
 Connect-SPOService -url https://$adminsite-admin.sharepoint.com
-Write-Host "Connected"
-Write-Host "We will need to gather information to move forward; these will assist in various places within the script."
+Write-Output "Connected"
+Write-Output "We will need to gather information to move forward; these will assist in various places within the script."
 $Dom = Read-Host "Enter the FQDN: "
+$filename = Read-Host "What would you like the filename to be?  You can also put a full path here."
 
 # =============================================
 # It starts with the 1.x series of questions for Azure Active Directory
@@ -38,23 +39,23 @@ $Dom = Read-Host "Enter the FQDN: "
 # Questions not in this script: 1.1.7-15
 # =============================================
 
-Write-Host "Microsoft 365 Verification Script for Standards Alignment"
+Write-Output "Microsoft 365 Verification Script for Standards Alignment"
 
-Write-Host "Verifying 1.1.1.1, 1.1.2.1 for MFA, 1.1.1.2 for Persistent Browser Session and 1.1.6 for legacy authentication."
-Start-Sleep -Seconds 1.5
-Get-AzureADMSConditionalAccessPolicy
-Read-Host -Prompt "Press any key to continue"
+Write-Output "Verifying 1.1.1.1, 1.1.2.1 for MFA, 1.1.1.2 for Persistent Browser Session and 1.1.6 for legacy authentication." > $filename
+#Start-Sleep -Seconds 1.5
+Get-AzureADMSConditionalAccessPolicy >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "Verifying Global Administrators, 1.1.3.1 and Cloud Only admin accounts, 1.1.3.2"
-Start-Sleep -Seconds 1.5
-$role = Get-AzureADDirectoryRole | Where-Object {$_.displayName -eq 'Global Administrator'}
-Get-AzureADDirectoryRoleMember -ObjectId $role.ObjectId | Select-Object -property UserPrincipalName,DirSyncEnabled
-Read-Host -Prompt "Press any key to continue"
+Write-Output "Verifying Global Administrators, 1.1.3.1 and Cloud Only admin accounts, 1.1.3.2" >> $filename
+#Start-Sleep -Seconds 1.5
+$role = Get-AzureADDirectoryRole | Where-Object {$_.displayName -eq 'Global Administrator'} >> $filename
+Get-AzureADDirectoryRoleMember -ObjectId $role.ObjectId | Select-Object -property UserPrincipalName,DirSyncEnabled >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "Verifying SSPR is enabled, 1.1.4"
-Start-Sleep -Seconds 1.5
-Get-AzureADMSAuthorizationPolicy | Select-Object -Property AllowedToUseSSPR
-Read-Host -Prompt "Press any key to continue"
+Write-Output "Verifying SSPR is enabled, 1.1.4" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-AzureADMSAuthorizationPolicy | Select-Object -Property AllowedToUseSSPR >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
 # 1.1.7 is not supported.
 
@@ -80,62 +81,62 @@ Read-Host -Prompt "Press any key to continue"
 # This section is complete.
 # =============================================
 
-Write-Host "1.2 Ensure Modern Authentication for Exchange Online is Enabled and 4.9 Ensure Basic Authentication for Exchange online is disabled"
-Start-Sleep -Seconds 1.5
-get-organizationconfig | format-table -auto name, OAuth*
-Write-Host "Verify that the policy is true."
-Read-Host -Prompt "Press any key to continue"
+Write-Output "1.2 Ensure Modern Authentication for Exchange Online is Enabled and 4.9 Ensure Basic Authentication for Exchange online is disabled" >> $filename
+#Start-Sleep -Seconds 1.5
+get-organizationconfig | format-table -auto name, OAuth* >> $filename
+Write-Output "Verify that the policy is true." >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Get-User -ResultSize Unlimited | Select-Object UserPrincipalName, AuthenticationPolicy | Where-Object -Property AuthenticationPolicy -ne $null
-Write-Host "Verify no user has a different authentication policy set.  If it doesn't return anything, then no user has that property set."
-Read-Host -Prompt "Press any key to continue"
+Get-User -ResultSize Unlimited | Select-Object UserPrincipalName, AuthenticationPolicy | Where-Object -Property AuthenticationPolicy -ne $null >> $filename
+Write-Output "Verify no user has a different authentication policy set.  If it doesn't return anything, then no user has that property set." >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "1.3 Ensure Modern Authentication for SharePoint Applications is required."
-Get-SPOTenant | Select-Object LegacyAuthProtocolsEnabled
-Read-Host -Prompt "Press any key to continue"
+Write-Output "1.3 Ensure Modern Authentication for SharePoint Applications is required. >> $filename"
+Get-SPOTenant | Select-Object LegacyAuthProtocolsEnabled >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "1.4 Microsoft 365 Passwords are set not to expire.  Validity period of 2147483647 means this is set."
-get-msolpasswordpolicy -domain $Dom
-Read-Host -Prompt "Press any key to continue"
+Write-Output "1.4 Microsoft 365 Passwords are set not to expire.  Validity period of 2147483647 means this is set." >> $filename
+get-msolpasswordpolicy -domain $Dom >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "1.5 Password Minimum Requirements, 12+ characters"
-Get-ADDefaultDomainPasswordPolicy
-Read-Host -Prompt "Press any key to continue"
+Write-Output "1.5 Password Minimum Requirements, 12+ characters" >> $filename
+Get-ADDefaultDomainPasswordPolicy >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
 # =============================================
 # This is the 2.x series of questions, Application Permissions
 # =============================================
 
-Write-Host "2.2 Ensure Calendar Details sharing with External Users is disabled."
-Start-Sleep -Seconds 1.5
-get-SharingPolicy | Where-object -property Default -eq True | Format-List -Property Domains
-Write-Host -Prompt "Look for Anonymous: in the Domains list.  If it is present and has any properties, external sharing is not disabled."
-Read-Host -Prompt "Press any key to continue"
+Write-Output "2.2 Ensure Calendar Details sharing with External Users is disabled." >> $filename
+#Start-Sleep -Seconds 1.5
+get-SharingPolicy | Where-object -property Default -eq True | Format-List -Property Domains >> $filename
+Write-Output -Prompt "Look for Anonymous: in the Domains list.  If it is present and has any properties, external sharing is not disabled." >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "2.3 Ensure Defender for Office 365 SafeLinks for Office Applications is enabled."
-Start-Sleep -Seconds 1.5
-get-safelinkspolicy | select-object -property ID,EnableSafeLinksforEmail,EnableSafeLinksforTeams,EnableSafeLinksforOffice
-Read-Host -Prompt "Press any key to continue"
+Write-Output "2.3 Ensure Defender for Office 365 SafeLinks for Office Applications is enabled." >> $filename
+#Start-Sleep -Seconds 1.5
+get-safelinkspolicy | select-object -property ID,EnableSafeLinksforEmail,EnableSafeLinksforTeams,EnableSafeLinksforOffice >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "2.4 Ensure Defender for Office 365 for SharePoint, OneDrive, and Microsoft Teams is Enabled"
-Start-Sleep -Seconds 1.5
-get-atppolicyforo365 | select-object -property ID,EnableATPForSPOTeamsODB,EnableSafeDocs
-Read-Host -Prompt "Press any key to continue"
+Write-Output "2.4 Ensure Defender for Office 365 for SharePoint, OneDrive, and Microsoft Teams is Enabled" >> $filename
+#Start-Sleep -Seconds 1.5
+get-atppolicyforo365 | select-object -property ID,EnableATPForSPOTeamsODB,EnableSafeDocs >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "2.5 Ensure Office 365 SharePoint Infected files are disallowed for download."
-Start-Sleep -Seconds 1.5
-Get-SPOTenant | Select-Object DisallowInfectedFileDownload
-Read-Host -Prompt "Press any key to continue"
+Write-Output "2.5 Ensure Office 365 SharePoint Infected files are disallowed for download." >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object DisallowInfectedFileDownload >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
 # 2.6 Ensure user consent to apps accessing company data on their behalf is not allowed
 
 # 2.7 Ensure the admin consent workflow is enabled
 
-Write-Host "2.8 Ensure users installing Outlook add-ins is not allowedge."
-Start-Sleep -Seconds 1.5
-Get-RoleAssignmentPolicy | Where-Object -property Name -eq "Default Role Assignment Policy" | Select-Object -ExpandProperty AssignedRoles
-Write-Host "Verify that My Custom Apps, My Marketplace Apps, and My ReadWriteMailbox Apps are NOT present in the list."
-Read-Host -Prompt "Press any key to continue"
+Write-Output "2.8 Ensure users installing Outlook add-ins is not allowedge." >> $filename
+#Start-Sleep -Seconds 1.5
+Get-RoleAssignmentPolicy | Where-Object -property Name -eq "Default Role Assignment Policy" | Select-Object -ExpandProperty AssignedRoles >> $filename
+Write-Output "Verify that My Custom Apps, My Marketplace Apps, and My ReadWriteMailbox Apps are NOT present in the list." >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
 # 2.9 Ensure users installing Word, Excel, Powerpoint is not allowed.
 
@@ -149,45 +150,45 @@ Read-Host -Prompt "Press any key to continue"
 # This section is complete.
 # =============================================
 
-Write-Host "3.1 Ensure the customer lockbox feature is enabled"
-Start-Sleep -Seconds 1.5
-get-organizationconfig | select-object -property CustomerLockboxEnabled
-Read-Host -Prompt "Press any key to continue"
+Write-Output "3.1 Ensure the customer lockbox feature is enabled" >> $filename
+#Start-Sleep -Seconds 1.5
+get-organizationconfig | select-object -property CustomerLockboxEnabled >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "3.2 Ensure SharePoint Online data classification policies are set up and used"
-Start-Sleep -Seconds 1.5
-Get-SPOTenant | Select-Object -Property EnableAIPIntegration
-Read-Host -Prompt "Press any key to continue"
+Write-Output "3.2 Ensure SharePoint Online data classification policies are set up and used" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property EnableAIPIntegration >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "3.3 Ensure external users are not allowed in Skype or Teams"
-Start-Sleep -Seconds 1.5
-Get-CsTeamsClientConfiguration | Select-Object -Property AllowGuestUser
-Read-Host -Prompt "Press any key to continue"
+Write-Output "3.3 Ensure external users are not allowed in Skype or Teams" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CsTeamsClientConfiguration | Select-Object -Property AllowGuestUser >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "3.4 Ensure DLP policies are enabled"
-Start-Sleep -Seconds 1.5
-Get-DlpCompliancePolicy | Select-Object DisplayName,Enabled
-Read-Host -Prompt "Press any key to continue"
+Write-Output "3.4 Ensure DLP policies are enabled" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-DlpCompliancePolicy | Select-Object DisplayName,Enabled >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "3.5 Ensure DLP policies are enabled for Microsoft Teams"
-Start-Sleep -Seconds 1.5
-Get-DlpCompliancePolicy | Select-Object DisplayName,Enabled,Workload
-Read-Host -Prompt "Press any key to continue"
+Write-Output "3.5 Ensure DLP policies are enabled for Microsoft Teams" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-DlpCompliancePolicy | Select-Object DisplayName,Enabled,Workload >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "3.6 Ensure that external users cannot share files, folders, and sites they do not own"
-Start-Sleep -Seconds 1.5
-Get-SPOTenant | Select-Object -Property PreventExternalUsersFromResharing
-Read-Host -Prompt "Press any key to continue"
+Write-Output "3.6 Ensure that external users cannot share files, folders, and sites they do not own" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property PreventExternalUsersFromResharing >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "3.7 Ensure external file sharing in Teams is enabled for only approved cloud storage services"
-Start-Sleep -Seconds 1.5
-Get-CsTeamsClientConfiguration | Select-Object -Property AllowDropbox,AllowBox,AllowGoogleDrive,AllowShareFile,AllowEgnyte
-Read-Host -Prompt "Press any key to continue"
+Write-Output "3.7 Ensure external file sharing in Teams is enabled for only approved cloud storage services" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CsTeamsClientConfiguration | Select-Object -Property AllowDropbox,AllowBox,AllowGoogleDrive,AllowShareFile,AllowEgnyte >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "3.8 Ensure that Microsoft Teams is using OneDrive for Business and SharePoint for meeting recordings"
-Start-Sleep -Seconds 1.5
-Get-CsTeamsMeetingPolicy -identity global | fl RecordingStorageMode
-Read-Host -Prompt "Press any key to continue"
+Write-Output "3.8 Ensure that Microsoft Teams is using OneDrive for Business and SharePoint for meeting recordings" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CsTeamsMeetingPolicy -identity global | fl RecordingStorageMode >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
 # =============================================
 # This is the 4.x series of questions, Email Security
@@ -195,135 +196,136 @@ Read-Host -Prompt "Press any key to continue"
 # This section is complete.
 # =============================================
 
-Write-Host "4.1 Ensure the Common Attachment Types Filter is enabled"
-Start-Sleep -Seconds 1.5
-Get-MalwareFilterPolicy | Select-Object -Property ID,FileTypeAction,FileTypes
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.1 Ensure the Common Attachment Types Filter is enabled" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-MalwareFilterPolicy | Select-Object -Property ID,FileTypeAction,FileTypes >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "Ensure Exchange Online Spam Policies are set correctly"
-Start-Sleep -Seconds 1.5
-get-hostedoutboundspamfilterpolicy | Select-Object -Property ID,BccSuspiciousOutboundMail,BccSuspiciousOutboundAdditionalRecipients,NotifyOutboundSpam,NotifyOutboundSpamRecipients
-Read-Host -Prompt "Press any key to continue"
+Write-Output "Ensure Exchange Online Spam Policies are set correctly" >> $filename
+#Start-Sleep -Seconds 1.5
+get-hostedoutboundspamfilterpolicy | Select-Object -Property ID,BccSuspiciousOutboundMail,BccSuspiciousOutboundAdditionalRecipients,NotifyOutboundSpam,NotifyOutboundSpamRecipients >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.2.1 IP Allow Lists are NOT present for Spam"
-Start-Sleep -Seconds 1.5
-Get-HostedConnectionFilterPolicy | Select-Object Name,IPAllowList
-Write-Host "Verify that no IP Addresses exist in the list."
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.2.1 IP Allow Lists are NOT present for Spam" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-HostedConnectionFilterPolicy | Select-Object Name,IPAllowList >> $filename
+Write-Output "Verify that no IP Addresses exist in the list." >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.3 Ensure mail transport rules do not forward email to external domains"
-Start-Sleep -Seconds 1.5
-Get-TransportRule | Select-Object -Property Name,Description | Format-List
-Write-Host "Verify that there are no auto-forwarding rules"
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.3 Ensure mail transport rules do not forward email to external domains" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-TransportRule | Select-Object -Property Name,Description | Format-List >> $filename
+Write-Output "Verify that there are no auto-forwarding rules" >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.4 Ensure Automatic Forwarding Options are disabled"
-Start-Sleep -Seconds 1.5
-Get-RemoteDomain Default | fl AllowedOOFType, AutoForwardEnabled
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.4 Ensure Automatic Forwarding Options are disabled" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-RemoteDomain Default | fl AllowedOOFType, AutoForwardEnabled >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.5 Ensure mail transport rules do not whitelist specific domains"
-Start-Sleep -Seconds 1.5
-Get-TransportRule | Select-Object -Property Name,Description | Format-List
-Write-Host "Verify that there are no rules that whitelist domains."
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.5 Ensure mail transport rules do not whitelist specific domains" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-TransportRule | Select-Object -Property Name,Description | Format-List >> $filename
+Write-Output "Verify that there are no rules that whitelist domains." >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.6 Ensure the Client Rules Forwarding Block is enabled"
-Start-Sleep -Seconds 1.5
-Get-TransportRule | Select-Object -Property Name,Description | Format-List
-Write-Host "Verify that one of these blocks auto forwards from internal to external senders"
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.6 Ensure the Client Rules Forwarding Block is enabled" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-TransportRule | Select-Object -Property Name,Description | Format-List >> $filename
+Write-Output "Verify that one of these blocks auto forwards from internal to external senders" >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.7 Ensure the Advanced Threat Protection Safe Links policy is enabled"
-Start-Sleep -Seconds 1.5
-get-safelinkspolicy | select-object -property ID,AllowClickThrough,EnableForInternalSenders
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.7 Ensure the Advanced Threat Protection Safe Links policy is enabled" >> $filename
+#Start-Sleep -Seconds 1.5
+get-safelinkspolicy | select-object -property ID,AllowClickThrough,EnableForInternalSenders >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.8 Ensure the Advanced Threat Protection Safe Attachments policy is enabled"
-Start-Sleep -Seconds 1.5
-Get-SafeAttachmentRule
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.8 Ensure the Advanced Threat Protection Safe Attachments policy is enabled" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SafeAttachmentRule >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.9 Ensure Basic Authentication for Exchange online is disabled"
-Start-Sleep -Seconds 1.5
-get-organizationconfig | format-table -auto name, OAuth*
-Write-Host "Verify that the policy is true."
-Read-Host -Prompt "Press any key to continue"
-Get-User -ResultSize Unlimited | Select-Object UserPrincipalName, AuthenticationPolicy | Where-Object -Property AuthenticationPolicy -ne $null
-Write-Host "Verify no user has a different authentication policy set.  If it doesn't return anything, then no user has that property set."
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.9 Ensure Basic Authentication for Exchange online is disabled" >> $filename
+#Start-Sleep -Seconds 1.5
+get-organizationconfig | format-table -auto name, OAuth* >> $filename
+Write-Output "Verify that the policy is true." >> $filename
+#Read-Host -Prompt "Press any key to continue"
+Get-User -ResultSize Unlimited | Select-Object UserPrincipalName, AuthenticationPolicy | Where-Object -Property AuthenticationPolicy -ne $null >> $filename
+Write-Output "Verify no user has a different authentication policy set.  If it doesn't return anything, then no user has that property set." >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.10 Ensure that an anti-phishing policy has been created"
-Start-Sleep -Seconds 1.5
-Get-AntiPhishPolicy | Select-Object -property ID
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.10 Ensure that an anti-phishing policy has been created" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-AntiPhishPolicy | Select-Object -property ID >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.11 Ensure that DKIM is enabled for all Exchange Online Domains"
-Start-Sleep -Seconds 1.5
+Write-Output "4.11 Ensure that DKIM is enabled for all Exchange Online Domains" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-DkimSigningConfig >> $filename
 Get-DkimSigningConfig
-Read-Host -Prompt "Press any key to continue"
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.12 Ensure SPF Records are published for Exchange domains."
-Start-Sleep -Seconds 1.5
-nslookup -type=txt $Dom
-Write-Host "Verify there is an entry for SPF."
+Write-Output "4.12 Ensure SPF Records are published for Exchange domains." >> $filename
+#Start-Sleep -Seconds 1.5
+nslookup -type=txt $Dom >> $filename
+Write-Output "Verify there is an entry for SPF." >> $filename
 $addDomyn = Read-Host -Prompt "Are there additional domains?  Y or N?"
 if ($addDomyn -eq 'y')
 {
     do {
         $addDom = Read-Host -Prompt "Enter additional mail domains to search."
-        nslookup -type=txt $addDom
+        nslookup -type=txt $addDom >> $filename
         $quit = Read-Host -Prompt "Do you have any other domains to search?  Y or N?"
         } while ($quit -eq 'y')
 }
-Read-Host -prompt "Press any key to continue"
+#Read-Host -prompt "Press any key to continue"
 
-Write-Host "4.13 Ensure DMARC Records for all Exchange Online domains are published"
-nslookup -type=txt _dmarc.$Dom
-Write-Host "Verify there is an entry for v=DMARC1."
+Write-Output "4.13 Ensure DMARC Records for all Exchange Online domains are published" >> $filename
+nslookup -type=txt _dmarc.$Dom >> $filename
+Write-Output "Verify there is an entry for v=DMARC1." >> $filename
 $addDomyn = Read-Host -Prompt "Are there additional domains?  Y or N?"
 if ($addDomyn -eq 'y')
 {
     do {
         $addDom = Read-Host -Prompt "Enter additional mail domains to search."
-        nslookup -type=txt _dmarc.$addDom
+        nslookup -type=txt _dmarc.$addDom >> $filename
         $quit = Read-Host -Prompt "Do you have any other domains to search?  Y or N?"
         } while ($quit -eq 'y')
 }
-Read-Host -prompt "Press any key to continue"
+#Read-Host -prompt "Press any key to continue"
 
-Write-Host "4.14 Ensure notifications for internal users sending malware is Enabled"
-Start-Sleep -Seconds 1.5
-Get-MalwareFilterPolicy | Select-Object -Property ID,EnableInternalSenderAdminNotifications,InternalSenderAdminAddress
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.14 Ensure notifications for internal users sending malware is Enabled" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-MalwareFilterPolicy | Select-Object -Property ID,EnableInternalSenderAdminNotifications,InternalSenderAdminAddress >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.15 Ensure Mailtips are enabled for end users"
-Start-Sleep -Seconds 1.5
-Get-OrganizationConfig | Select-Object MailTipsAllTipsEnabled, MailTipsExternalRecipientsTipsEnabled, MailTipsGroupMetricsEnabled, MailTipsLargeAudienceThreshold
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.15 Ensure Mailtips are enabled for end users" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-OrganizationConfig | Select-Object MailTipsAllTipsEnabled, MailTipsExternalRecipientsTipsEnabled, MailTipsGroupMetricsEnabled, MailTipsLargeAudienceThreshold >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.16 Set spam policy to quarantine messages - not deliver to junk mail"
-Start-Sleep -Seconds 1.5
-Get-HostedContentFilterRule
-Get-HostedContentFilterPolicy | Select-Object -property ID,SpamAction,PhishSpamAction,BulkSpamAction,HighConfidencePhishAction
-Write-Host "Verify that the policies with the same name as the rules have the appropriate settings."
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.16 Set spam policy to quarantine messages - not deliver to junk mail" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-HostedContentFilterRule >> $filename
+Get-HostedContentFilterPolicy | Select-Object -property ID,SpamAction,PhishSpamAction,BulkSpamAction,HighConfidencePhishAction >> $filename
+Write-Output "Verify that the policies with the same name as the rules have the appropriate settings." >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.17 SMTP AUTH SHALL be disabled."
-Start-Sleep -Seconds 1.5
-Get-TransportConfig | Format-List SmtpClientAuthenticationDisabled
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.17 SMTP AUTH SHALL be disabled." >> $filename
+#Start-Sleep -Seconds 1.5
+Get-TransportConfig | Format-List SmtpClientAuthenticationDisabled >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.18 Email Encryption Policy is Configured"
-Start-Sleep -Seconds 1.5
-Get-IRMConfiguration | Select-Object -Property AzureRMSLicensingEnabled
+Write-Output "4.18 Email Encryption Policy is Configured" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-IRMConfiguration | Select-Object -Property AzureRMSLicensingEnabled >> $filename
 Get-TransportRule
-Read-Host -Prompt "Press any key to continue"
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "4.19 Enhanced Filtering is turned on for 3rd Party email filtering tools"
-Start-Sleep -Seconds 1.5
-Get-InboundConnector | Select-Object -Property Name,EFSkipLastIP,EFSkipIPs
-Read-Host -Prompt "Press any key to continue"
+Write-Output "4.19 Enhanced Filtering is turned on for 3rd Party email filtering tools" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-InboundConnector | Select-Object -Property Name,EFSkipLastIP,EFSkipIPs >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
 # =============================================
 # This is the 5.x series of questions, Auditing
@@ -331,10 +333,10 @@ Read-Host -Prompt "Press any key to continue"
 
 
 #5.1 
-Get-AdminAuditLogConfig | Select-Object -Property AdminAuditLogEnabled
+#Get-AdminAuditLogConfig | Select-Object -Property AdminAuditLogEnabled
 
 #5.2 Mailbox auditing (list of unaudited mailboxes)
-Get-Mailbox -ResultSize Unlimited | Where-Object {$_.AuditEnabled -ne $true - and ($_.RecipientTypeDetails -ne "UserMailbox" -or $_.RecipientTypeDetails - ne "SharedMailbox")}
+#Get-Mailbox -ResultSize Unlimited | Where-Object {$_.AuditEnabled -ne $true - and ($_.RecipientTypeDetails -ne "UserMailbox" -or $_.RecipientTypeDetails - ne "SharedMailbox")}
 
 
 
@@ -344,47 +346,47 @@ Get-Mailbox -ResultSize Unlimited | Where-Object {$_.AuditEnabled -ne $true - an
 # This section is complete.                    
 # =============================================
 
-Write-Host "6.1 Ensure document sharing is being controlled by domains with allow list or deny list"
-Start-Sleep -Seconds 1.5
-Get-SPOTenant | Select-Object -Property SharingAllowedDomainList, SharingBlockedDomainList, SharingdomainRestrictionMode
-Read-Host -Prompt "Press any key to continue"
+Write-Output "6.1 Ensure document sharing is being controlled by domains with allow list or deny list" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property SharingAllowedDomainList, SharingBlockedDomainList, SharingdomainRestrictionMode >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "6.2 Block OneDrive for Business sync from unmanaged devices"
-Start-Sleep -Seconds 1.5
-Get-SPOTenantSyncClientRestriction | Select-Object -Property TenantRestrictionEnabled, AllowedDomainList
-Read-Host -Prompt "Press any key to continue"
+Write-Output "6.2 Block OneDrive for Business sync from unmanaged devices" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SPOTenantSyncClientRestriction | Select-Object -Property TenantRestrictionEnabled, AllowedDomainList >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "6.3 Ensure expiration time for external sharing links is set"
-Start-Sleep -Seconds 1.5
-Get-SPOTenant | Select-Object -Property ExternalUserExpirationRequired, ExternalUserExpireInDays
-Read-Host -Prompt "Press any key to continue"
+Write-Output "6.3 Ensure expiration time for external sharing links is set" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property ExternalUserExpirationRequired, ExternalUserExpireInDays >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "6.4 Ensure external storage providers available in Outlook on the Web are restricted"
-Start-Sleep -Seconds 1.5
-Get-OwaMailboxPolicy | Format-Table Name, AdditionalStorageProvidersAvailable
-Read-Host -Prompt "Press any key to continue"
+Write-Output "6.4 Ensure external storage providers available in Outlook on the Web are restricted" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-OwaMailboxPolicy | Format-Table Name, AdditionalStorageProvidersAvailable >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "6.5 File and Folder Links default Sharing Settings SHALL be set to 'Specific People'"
-Start-Sleep -Seconds 1.5
-Get-SPOTenant | Select-Object -Property DefaultSharingLinkType
-Read-Host -Prompt "Press any key to continue"
+Write-Output "6.5 File and Folder Links default Sharing Settings SHALL be set to 'Specific People'" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property DefaultSharingLinkType >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "6.6.1 Anyone Links SHOULD be turned Off"
-Start-Sleep -Seconds 1.5
-Get-SPOTenant | Select-Object -Property SharingCapability
-Write-Host "If the Value is ExternalUserandGuestSharing, it allows Anyone links,"
-Read-Host -Prompt "Press any key to continue"
+Write-Output "6.6.1 Anyone Links SHOULD be turned Off" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property SharingCapability >> $filename
+Write-Output "If the Value is ExternalUserandGuestSharing, it allows Anyone links," >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "6.6.2 If Enabled, Anyone Links SHOULD be set to View by default"
-Start-Sleep -Seconds 1.5
-Get-SPOTenant | Select-Object -Property FileAnonymousLinkType, FolderAnonymousLinkType
-Read-Host -Prompt "Press any key to continue"
+Write-Output "6.6.2 If Enabled, Anyone Links SHOULD be set to View by default" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SPOTenant | Select-Object -Property FileAnonymousLinkType, FolderAnonymousLinkType >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "6.7 Users SHALL Be Prevented from Running Custom Scripts"
-Start-Sleep -Seconds 1.5
-Get-SPOSite -identity https://$adminsite.sharepoint.com | Select-Object -Property DenyAddAndCustomizePages
-Write-Host "This setting should be Enabled.  That means it is denying the custom scripts from running."
-Read-Host -Prompt "Press any key to continue"
+Write-Output "6.7 Users SHALL Be Prevented from Running Custom Scripts" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-SPOSite -identity https://$adminsite.sharepoint.com | Select-Object -Property DenyAddAndCustomizePages >> $filename
+Write-Output "This setting should be Enabled.  That means it is denying the custom scripts from running." >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
 # =============================================
 # This is the 8.x series of questions for Teams
@@ -392,69 +394,69 @@ Read-Host -Prompt "Press any key to continue"
 # This section is complete.                    
 # =============================================
 
-Write-Host "8.1 Private channels shall be utilized to restrict access to sensitive information"
-Start-Sleep -Seconds 1.5
-Get-Team | Where-Object -Property Visibility -eq "Public"
-Write-Host "Verify those public teams to make sure that they are not sensitive"
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.1 Private channels shall be utilized to restrict access to sensitive information" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-Team | Where-Object -Property Visibility -eq "Public" >> $filename
+Write-Output "Verify those public teams to make sure that they are not sensitive" >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.2 External Participants SHOULD NOT be allowed to request control"
-Start-Sleep -Seconds 1.5
-Get-CsTeamsMeetingPolicy | Where-Object -Property Identity -eq "Global" | Select-Object -Property AllowExternalParticipantGiveRequestControl
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.2 External Participants SHOULD NOT be allowed to request control" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CsTeamsMeetingPolicy | Where-Object -Property Identity -eq "Global" | Select-Object -Property AllowExternalParticipantGiveRequestControl >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.3 Anonymous Users SHALL NOT be enabled to start meetings"
-Start-Sleep -Seconds 1.5
-Get-CsTeamsMeetingPolicy | Where-Object -Property Identity -eq "Global" | Select-Object -Property AllowAnonymousUsersToStartMeeting
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.3 Anonymous Users SHALL NOT be enabled to start meetings" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CsTeamsMeetingPolicy | Where-Object -Property Identity -eq "Global" | Select-Object -Property AllowAnonymousUsersToStartMeeting >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.4 Automatic Admittance to meetings SHOULD be restricted"
-Start-Sleep -Seconds 1.5
-Get-CsTeamsMeetingPolicy | Where-Object -Property Identity -eq "Global" | Select-Object -Property AutoAdmittedUsers
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.4 Automatic Admittance to meetings SHOULD be restricted" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CsTeamsMeetingPolicy | Where-Object -Property Identity -eq "Global" | Select-Object -Property AutoAdmittedUsers >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.5 External User Access SHALL be restricted"
-Start-Sleep -Seconds 1.5
-Get-CSTenantFederationConfiguration | Select-Object -Property AllowedDomains
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.5 External User Access SHALL be restricted" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CSTenantFederationConfiguration | Select-Object -Property AllowedDomains >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.6.1 Unmanaged Users SHALL NOT be able to initiatie contact with internal users"
-Start-Sleep -Seconds 1.5
-Get-CSTenantFederationConfiguration | Select-Object -Property AllowTeamsConsumerInbound
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.6.1 Unmanaged Users SHALL NOT be able to initiatie contact with internal users" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CSTenantFederationConfiguration | Select-Object -Property AllowTeamsConsumerInbound >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.6.2 Unmanaged Users SHOULD not be able to be contacted by internal users"
-Start-Sleep -Seconds 1.5
-Get-CSTenantFederationConfiguration | Select-Object -Property AllowTeamsConsumer
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.6.2 Unmanaged Users SHOULD not be able to be contacted by internal users" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CSTenantFederationConfiguration | Select-Object -Property AllowTeamsConsumer >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.7 Contact with Skype Users SHALL be Disabled"
-Start-Sleep -Seconds 1.5
-Get-CSTenantFederationConfiguration | Select-Object -Property AllowPublicUSers
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.7 Contact with Skype Users SHALL be Disabled" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CSTenantFederationConfiguration | Select-Object -Property AllowPublicUSers >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.8 Teams Email Integration SHALL be disabled"
-Start-Sleep -Seconds 1.5
-Get-CsTeamsClientConfiguration | Select-Object -Property AllowEmailIntoChannel
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.8 Teams Email Integration SHALL be disabled" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CsTeamsClientConfiguration | Select-Object -Property AllowEmailIntoChannel >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.9 Only Approved Apps should be installed"
-Start-Sleep -Seconds 1.5
-Get-CsTeamsAppPermissionPolicy
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.9 Only Approved Apps should be installed" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CsTeamsAppPermissionPolicy >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.10 Only the Meeting Organizer should be able to record live events"
-Start-Sleep -Seconds 1.5
-Get-CsTeamsMeetingBroadcastPolicy | Select-Object -Property Identity,BroadcastRecordingMode
-Write-Host "The setting should be in UserOverride"
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.10 Only the Meeting Organizer should be able to record live events" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CsTeamsMeetingBroadcastPolicy | Select-Object -Property Identity,BroadcastRecordingMode >> $filename
+Write-Output "The setting should be in UserOverride" >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.11 Creation of new Teams Channels is restricted"
-Start-Sleep -Seconds 1.5
-Get-CsTeamsChannelPolicy
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.11 Creation of new Teams Channels is restricted" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-CsTeamsChannelsPolicy >> $filename
+#Read-Host -Prompt "Press any key to continue"
 
-Write-Host "8.12 Teams Channels have an expiration policy"
-Start-Sleep -Seconds 1.5
-Get-AzureADMSGroupLifecyclePolicy
-Read-Host -Prompt "Press any key to continue"
+Write-Output "8.12 Teams Channels have an expiration policy" >> $filename
+#Start-Sleep -Seconds 1.5
+Get-AzureADMSGroupLifecyclePolicy >> $filename
+#Read-Host -Prompt "Press any key to continue"
