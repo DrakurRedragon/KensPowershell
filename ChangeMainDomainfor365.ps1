@@ -18,3 +18,7 @@ set-azureaduser -ObjectId $azureadid.ObjectId -ImmutableID $immutableID
 
 graph scope user.readwrite.all
 Update-MgUser -UserId "user@domain.com" -OnPremisesImmutableId $null
+
+Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/v1.0/Users/tcaltune@handcenters.com" -Body @{onPremisesImmutableId = $null}
+Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/Users/tcaltune@handcenters.com?select=id,displayName,onPremisesImmutableID"
+
