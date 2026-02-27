@@ -1,0 +1,14 @@
+get-aduser -filter * -properties * -server EMCM01 | select name,distinguishedname,enabled,UserPrincipalName | export-csv c:\temp\users.csv -notype
+
+get-aduser -filter * -properties * | select name,distinguishedname,enabled,UserPrincipalName | export-csv c:\temp\users.csv -notype
+
+foreach ($user in (import-csv c:\temp\list.csv)) {
+    $userinfo = get-aduser -identity $user -properties LastLogonDate
+    $results += [PSCustomObject]@{
+        Name = $userinfo.Name
+        LastLogonDate = $userinfo.LastLogonDate
+        UserPrincipalName = $userinfo.UserPrincipalName
+        Enabled = $userinfo.Enabled
+    }
+}
+$results | export-csv c:\temp\userLLD.csv -notype
