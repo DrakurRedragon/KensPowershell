@@ -1,0 +1,1 @@
+New-DynamicDistributionGroup -Name "premier.hoppercomms" -Alias "premier.hoppercomms" -RecipientFilter {(RecipientTypeDetails -eq 'UserMailbox' -and AccountDisabled -eq $false)} -HiddenFromAddressListsEnabled $true
