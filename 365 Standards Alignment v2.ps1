@@ -6,7 +6,7 @@
 # install-module microsoftteams -scope CurrentUser
 # install-module azuread -scope currentuser
 
-
+#
 
 
 Write-Output "You will prompted to log in several times.  Use a Global Administrator account for the login."
