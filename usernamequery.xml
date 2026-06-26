@@ -1,0 +1,10 @@
+<QueryList>
+  <Query Id="0" Path="Security">
+    <Select Path="Security">
+      *[System[(EventID=4624)] 
+        and 
+        EventData[Data[@Name='TargetUserName'] and (Data='MSR')]
+      ]
+    </Select>
+  </Query>
+</QueryList>
