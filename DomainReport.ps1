@@ -1,3 +1,5 @@
+# This is designed as a quick information gather on a domain from a DC.  It pulls and creates files for: Every server, OS count, GPOs individually in their own HTML files, login scripts and accounts withou them, computers and users that haven't checked in in over 90 days, and every member of a group containing Admin in the name
+
 get-adcomputer -filter {OperatingSystem -like "*Server*"} -Properties Name, OperatingSystem, IPV4Address, Enabled | sort -Property Name | export-csv -path c:\Temp\server.csv
 
 Get-ADComputer -Filter {Enabled -eq "True"} -Properties * | Group-Object -Property OperatingSystem,OperatingSystemVersion | Select-Object Name,Count | Sort-Object Name | Export-CSV -Path c:\Temp\oscount.csv

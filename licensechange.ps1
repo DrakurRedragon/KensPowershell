@@ -1,3 +1,5 @@
+# This is designed to change the licensing for a group of users via CSV.  It adds people to a group for licensing (which should already be created and assigned the necessary licenses), then it removes the individual licenses. from the user.
+
 $usercsv = import-csv -path "c:\temp\user.csv"
 foreach ($i in $usercsv)
 {

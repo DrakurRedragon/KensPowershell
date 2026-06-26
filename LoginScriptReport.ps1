@@ -1,3 +1,4 @@
+# This is designed to pull every user in the domain, then filter them into two files, one without login scripts and one with login scripts. 
 $users = get-aduser -filter *
 $scriptpath = @()
 $scriptpath2 = @()
