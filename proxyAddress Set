@@ -1,0 +1,234 @@
+<#
+.SYNOPSIS
+    Reads a CSV/TSV of UPN -> proxy address list and REPLACES each matching
+    AD user's entire proxyAddresses attribute with the list from the file -
+    even if the account already has different proxyAddresses set.
+
+.DESCRIPTION
+    Expected input: a CSV with a header row containing (at least) these two
+    columns:
+
+        UserPrincipalName,proxyAddresses
+        slee@orthopaedicspecialty.com,"smtp:rwork@osgpc.com;smtp:slee@orthopaedicspecialty.mail.onmicrosoft.com;smtp:slee@orthopaedicspecialty.com;smtp:slee@osgct.com;SMTP:slee@osgpc.com"
+
+    UserPrincipalName = UPN to match the AD account on.
+    proxyAddresses    = semicolon-separated proxy addresses, exactly as they
+                         should end up on the account (case of "SMTP:" vs
+                         "smtp:" preserved - that's what marks the primary
+                         address). Since the value itself contains commas'
+                         cousin (semicolons) but not commas, it doesn't need
+                         quoting for a standard comma-delimited CSV, but
+                         quoted values work fine too.
+
+    For each row:
+      - The AD user is looked up by UserPrincipalName.
+      - If found, proxyAddresses is REPLACED wholesale with the addresses
+        parsed from the proxyAddresses column (Set-ADUser -Replace).
+        Whatever the account had before is discarded, not merged.
+      - If not found, it's logged and skipped - nothing else happens.
+
+    A few sanity checks are logged (but do not block the replace, since the
+    file is treated as the source of truth):
+      - No address in the row starts with "SMTP:" (no primary) -> Warning.
+      - More than one address starts with "SMTP:" (multiple primaries) -> Warning.
+
+.PARAMETER CsvPath
+    Path to the input CSV.
+
+.PARAMETER UpnColumn
+    Header name of the UPN column. Default "UserPrincipalName".
+
+.PARAMETER ProxyColumn
+    Header name of the proxy-address-list column. Default "proxyAddresses".
+
+.PARAMETER SearchBase
+    Restricts the AD lookup to a specific OU, expressed as a distinguished
+    name. Defaults to "OU=OSG,DC=corp,DC=orth,DC=com" (the OSG OU under
+    corp.orth.com). Accounts that exist elsewhere in the domain are treated
+    the same as accounts that don't exist at all - logged as NotFound.
+    Pass -SearchBase "" to search the whole domain instead.
+
+.PARAMETER LogPath
+    Where to write the action log. Defaults to .\ProxyAddressReplace_log.csv
+
+.PARAMETER Server
+    Optional specific domain controller to query/update.
+
+.PARAMETER DryRun
+    Default $true. When true, NOTHING is changed in AD - only reported to
+    console and the log CSV. Re-run with -DryRun:$false once reviewed.
+
+.EXAMPLE
+    # Dry run first - see what would happen, nothing is changed
+    .\Replace-ADProxyAddresses.ps1 -CsvPath C:\Temp\proxylist.csv
+
+.EXAMPLE
+    # Actually apply the changes
+    .\Replace-ADProxyAddresses.ps1 -CsvPath C:\Temp\proxylist.csv -DryRun:$false
+
+.EXAMPLE
+    # Use a different OU than the default
+    .\Replace-ADProxyAddresses.ps1 -CsvPath C:\Temp\proxylist.csv -SearchBase "OU=OtherOU,DC=corp,DC=orth,DC=com"
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$CsvPath,
+
+    [string]$UpnColumn = "UserPrincipalName",
+
+    [string]$ProxyColumn = "proxyAddresses",
+
+    [string]$SearchBase = "OU=OSG,DC=corp,DC=dortho,DC=com",
+
+    [string]$LogPath = ".\ProxyAddressReplace_log.csv",
+
+    [string]$Server,
+
+    [bool]$DryRun = $true
+)
+
+Import-Module ActiveDirectory -ErrorAction Stop
+
+if (-not (Test-Path -LiteralPath $CsvPath)) {
+    throw "CsvPath '$CsvPath' was not found."
+}
+
+if ($SearchBase) {
+    Write-Host "Restricting AD lookups to: $SearchBase`n" -ForegroundColor Cyan
+}
+
+if ($DryRun) {
+    Write-Host "=== DRY RUN MODE - no proxyAddresses will be changed in AD ===" -ForegroundColor Yellow
+    Write-Host "    Re-run with -DryRun:`$false once you've reviewed the log.`n" -ForegroundColor Yellow
+}
+
+# --- Load the input file ---------------------------------------------------
+$rows = Import-Csv -Path $CsvPath
+
+if (-not $rows -or $rows.Count -eq 0) {
+    throw "No rows found in '$CsvPath'."
+}
+if (-not ($rows[0].PSObject.Properties.Name -contains $UpnColumn)) {
+    throw "Column '$UpnColumn' not found. Columns present: $($rows[0].PSObject.Properties.Name -join ', ')"
+}
+if (-not ($rows[0].PSObject.Properties.Name -contains $ProxyColumn)) {
+    throw "Column '$ProxyColumn' not found. Columns present: $($rows[0].PSObject.Properties.Name -join ', ')"
+}
+
+Write-Host "Loaded $($rows.Count) row(s) from '$CsvPath'.`n" -ForegroundColor Cyan
+
+# --- Process ---------------------------------------------------
+$log = New-Object System.Collections.Generic.List[object]
+$getUserParams = @{}
+$setUserParams = @{}
+if ($Server) {
+    $getUserParams['Server'] = $Server
+    $setUserParams['Server'] = $Server
+}
+if ($SearchBase) {
+    $getUserParams['SearchBase'] = $SearchBase
+}
+
+$i = 0
+$total = $rows.Count
+
+foreach ($row in $rows) {
+    $i++
+    if ($i % 25 -eq 0 -or $i -eq $total) {
+        Write-Progress -Activity "Replacing proxyAddresses" -Status "$i of $total" -PercentComplete (($i / [math]::Max($total,1)) * 100)
+    }
+
+    $upn = ($row.$UpnColumn).Trim()
+
+    $newAddresses = @()
+    if ($row.$ProxyColumn) {
+        $newAddresses = $row.$ProxyColumn -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+    }
+
+    $logEntry = [PSCustomObject]@{
+        UPN               = $upn
+        Found             = $false
+        OldProxyAddresses = $null
+        NewProxyAddresses = ($newAddresses -join ';')
+        Action            = $null
+        Warning           = $null
+        Note              = $null
+    }
+
+    if ([string]::IsNullOrWhiteSpace($upn)) {
+        $logEntry.Action = 'Skipped'
+        $logEntry.Note = 'Empty UPN in source row'
+        $log.Add($logEntry)
+        continue
+    }
+
+    if ($newAddresses.Count -eq 0) {
+        $logEntry.Action = 'Skipped'
+        $logEntry.Note = 'No proxy addresses parsed from source row'
+        $log.Add($logEntry)
+        continue
+    }
+
+    # Sanity checks on the source data - logged, not blocking
+    $primaryCount = ($newAddresses | Where-Object { $_ -cmatch '^SMTP:' }).Count
+    if ($primaryCount -eq 0) {
+        $logEntry.Warning = 'No primary (SMTP:) address in source list'
+    }
+    elseif ($primaryCount -gt 1) {
+        $logEntry.Warning = "$primaryCount primary (SMTP:) addresses in source list - expected 1"
+    }
+
+    try {
+        $adUser = Get-ADUser -Filter "UserPrincipalName -eq '$upn'" -Properties proxyAddresses @getUserParams -ErrorAction Stop
+
+        if (-not $adUser) {
+            $logEntry.Action = 'NotFound'
+            $logEntry.Note = 'No AD account with this UserPrincipalName'
+            $log.Add($logEntry)
+            continue
+        }
+
+        if ($adUser -is [array]) {
+            $logEntry.Action = 'Error'
+            $logEntry.Note = "Multiple AD accounts matched this UPN ($($adUser.Count)) - skipped, resolve manually"
+            $log.Add($logEntry)
+            continue
+        }
+
+        $logEntry.Found = $true
+        $logEntry.OldProxyAddresses = ($adUser.proxyAddresses -join ';')
+        $logEntry.Action = 'Replace'
+
+        if (-not $DryRun) {
+            Set-ADUser -Identity $adUser -Replace @{ proxyAddresses = $newAddresses } @setUserParams -ErrorAction Stop
+        }
+    }
+    catch {
+        $logEntry.Action = 'Error'
+        $logEntry.Note = $_.Exception.Message
+    }
+
+    $log.Add($logEntry)
+}
+
+Write-Progress -Activity "Replacing proxyAddresses" -Completed
+
+# --- Write log / summary ---------------------------------------------------
+$log | Export-Csv -Path $LogPath -NoTypeInformation -Encoding UTF8
+
+$replaced  = ($log | Where-Object { $_.Action -eq 'Replace' }).Count
+$notFound  = ($log | Where-Object { $_.Action -eq 'NotFound' }).Count
+$skipped   = ($log | Where-Object { $_.Action -eq 'Skipped' }).Count
+$errors    = ($log | Where-Object { $_.Action -eq 'Error' }).Count
+$warnings  = ($log | Where-Object { $_.Warning }).Count
+
+Write-Host ""
+Write-Host "Done. $(if ($DryRun) { '(DRY RUN - nothing was actually changed)' })" -ForegroundColor Green
+Write-Host "  Replaced             : $replaced"
+Write-Host "  Not found in AD      : $notFound"
+Write-Host "  Skipped (bad row)    : $skipped"
+Write-Host "  Errors               : $errors"
+Write-Host "  Rows with warnings   : $warnings  (see Warning column in log)"
+Write-Host "  Full log written to  : $LogPath"
