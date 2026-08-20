@@ -1,0 +1,5 @@
+$ou = "OU=group,OU=location,DC=domain,DC=com"
+$groups = get-adgroup -filter * -Searchbase = $ou
+foreach ($group in $groups){
+$groupname = $group.SamAccountName
+$members=get-adgroupmember -identity $group.SamAccountName | Select-Object Name,SamAccountName | Export-CSV "c:\Temp\Groups\$groupname.csv"}

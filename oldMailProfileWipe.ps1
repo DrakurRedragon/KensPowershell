@@ -13,7 +13,7 @@ Get-ChildItem $profilePath | ForEach-Object {
     }
 
     $match = $subValues | Where-Object {
-        ($_."Account Name" -like "*hopco.com*") -or ($_."Email" -like "*hopco.com*")
+        ($_."Account Name" -like "*orthopaedicspecailty.com*") -or ($_."Email" -like "*orthopaedicspecailty.com*")
     }
 
     if ($match) {

@@ -1,0 +1,45 @@
+Sub MergeCSVFilesToSheets()
+
+    Dim folderPath As String
+    Dim fileName As String
+    Dim wbCSV As Workbook
+    Dim ws As Worksheet
+    Dim targetWb As Workbook
+    Dim sheetName As String
+
+    Set targetWb = ThisWorkbook
+
+    folderPath = InputBox("Enter the folder path containing CSV files:")
+
+    If Right(folderPath, 1) <> "\" Then
+        folderPath = folderPath & "\"
+    End If
+
+    fileName = Dir(folderPath & "*.csv")
+
+    Application.ScreenUpdating = False
+
+    Do While fileName <> ""
+
+        Workbooks.Open folderPath & fileName
+        Set wbCSV = ActiveWorkbook
+
+        sheetName = Left(fileName, InStrRev(fileName, ".") - 1)
+
+        wbCSV.Worksheets(1).Copy After:=targetWb.Sheets(targetWb.Sheets.Count)
+        Set ws = targetWb.Sheets(targetWb.Sheets.Count)
+
+        On Error Resume Next
+        ws.Name = Left(sheetName, 31)
+        On Error GoTo 0
+
+        wbCSV.Close SaveChanges:=False
+
+        fileName = Dir
+    Loop
+
+    Application.ScreenUpdating = True
+
+    MsgBox "CSV files have been merged successfully."
+
+End Sub
