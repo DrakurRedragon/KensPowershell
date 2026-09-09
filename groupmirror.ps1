@@ -1,6 +1,6 @@
 # Using Graph a graph commandlet, this pulls the members of a group based on the ID.  Change this in the first line.  The second line is for the receiving group.  It will then put every single member of the first group into the second.
-$memberlist = get-mggroupmember -groupID bae545c7-0844-4cc8-8c02-e7ff6d868048 -all
-$groupid = "2f53cffb-d130-44af-91c1-aa9b2aa44c8f"
+$memberlist = get-mggroupmember -groupID bab0be4c-9d02-4c97-80ec-32e82b264e79 -all
+$groupid = "9c951fe6-af0d-4444-a89d-69f99b2ae951"
 foreach ($user in $memberlist)
 {
 	$userid = $user.id

@@ -1,4 +1,8 @@
-$targetOU = "OU=Test OU,OU=Handcenters,DC=CORP,DC=PREMIER,DC=COM"
+# These scripts are designed for the following purpose:  Two disparate AD domains sync up to a single 365 tenant.  These will move the accounts to an unsynced OU, restore the account and blank out the immutable ID, then move it to a synced OU on the other domain.
+# Requirements: The accounts in the losing tenant and gaining tenant MUST HAVE THE SAME UPN.  FULL ADSync MUST BE RUN after this script is run.
+# This is the 3rd script.  It takes the CSV from the 2nd and moves the accounts in the gaining domain to a syncing OU.
+
+$targetOU = "OU=Synced OU,DC=CORP,DC=COM"
 $users = Import-Csv -Path "C:\temp\movedusers.csv"
 $logFile = "C:\temp\moveOUPrem.log"
 $movedcsv = @()
