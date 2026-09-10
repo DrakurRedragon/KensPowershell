@@ -1,8 +1,8 @@
-# This will scan a root with recursion for every .lnk file, which are folder level shortcuts, and return the name, location, and the target path for each.
+# This will scan a root with recursion for every .lnk file and return the name, location, and the target path for each.
 
 # Change the Root Path of where to start
 
-$rootpath = "E:\DFSRoot\FolderRedirect\UserProfiles"
+$rootpath = "E:\UserProfiles"
 
 # Change this to the path for your CSV:
 
