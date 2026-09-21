@@ -1,4 +1,6 @@
-$topPath = "E:\PREMIERDC01\PT"
+# Enter the top path in the first variable.  It will give you every subfolder one level down and tell you the 
+
+$topPath = "E:\PREMIERDC01\PT\Media"
 $folderResults = @()
 
 # Check subfolders

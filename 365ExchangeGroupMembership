@@ -1,0 +1,98 @@
+# Requires the ExchangeOnlineManagement module
+# Install-Module -Name ExchangeOnlineManagement (if not already installed)
+
+# Change the Following Logfile entries:
+
+$365logfilename = "c:\Temp\m365group.xlsx"
+$distrologfilename = "C:\Temp\Distro.xlsx"
+
+$module = get-InstalledModule
+$name = "ImportExcel"
+if ($module.name -like $name)
+{
+Write-Host "$name is Installed" -ForegroundColor Green
+}
+else
+{
+Write-Host "$name was not Installed.  Installing" -ForegroundColor Red
+Install-Module $name -scope CurrentUser
+Write-Host "$name is now Installed." -ForegroundColor Green
+}
+$module2 = get-Module
+if ($module.name -like $name)
+{
+Write-Host "$name is Imported" -ForegroundColor Green
+}
+else
+{
+Write-Host "$name was not imported.  Importing" -ForegroundColor Red
+Import-Module $name
+Write-Host "$name is now imported." -ForegroundColor Green
+}
+$name = "ExchangeOnlineManagement"
+if ($module.name -like $name)
+{
+Write-Host "$name is Installed" -ForegroundColor Green
+}
+else
+{
+Write-Host "$name was not Installed.  Installing" -ForegroundColor Red
+Install-Module $name -scope CurrentUser
+Write-Host "$name is now Installed." -ForegroundColor Green
+}
+if ($module2.name -like $name)
+{
+Write-Host "$name is Imported" -ForegroundColor Green
+}
+else
+{
+Write-Host "$name was not imported.  Importing" -ForegroundColor Red
+Import-Module $name
+Write-Host "$name is now imported." -ForegroundColor Green
+}
+
+$groups = Get-UnifiedGroup -ResultSize Unlimited | Sort-Object DisplayName
+
+foreach ($group in $groups) {
+
+    $members = Get-UnifiedGroupLinks -Identity $group.Identity -LinkType Members -ResultSize Unlimited
+
+    if ($members) {
+    $memberarray =@()
+        foreach ($member in $members) {
+            $displayName = $member.DisplayName
+            $upn = $member.PrimarySmtpAddress  # For most mail-enabled objects, this aligns with UPN for users
+
+            $memberArray = $memberarray += "$displayName,$upn" 
+            
+        }
+    $memberarray | Export-Excel -WorksheetName "$group" -Path $365logfilename -BoldTopRow -AutoSize -Title "$group" -TitleSize 16
+    } else {
+        "(no members)" | Export-Excel -WorksheetName "$group" -Path $365logfilename -BoldTopRow -AutoSize -Title "$group" -TitleSize 16
+    }
+}
+
+$distrogroups = Get-DistributionGroup -ResultSize Unlimited | Sort-Object DisplayName
+
+foreach ($distrogroup in $distrogroups) {
+
+    $members = Get-DistributionGroupMember -Identity $distrogroup.Name -ResultSize Unlimited
+
+    if ($members) {
+    $memberarray =@()
+        foreach ($member in $members) {
+            $displayName = $member.DisplayName
+            $upn = $member.PrimarySmtpAddress  # For most mail-enabled objects, this aligns with UPN for users
+
+            $memberArray = $memberarray += "$displayName,$upn" 
+            
+        }
+    $memberarray | Export-Excel -WorksheetName "$distrogroup" -Path $distrologfilename -BoldTopRow -AutoSize -Title "$distrogroup" -TitleSize 16
+    } else {
+        "(no members)" | Export-Excel -WorksheetName "$distrogroup" -Path $distrologfilename -BoldTopRow -AutoSize -Title "$distrogroup" -TitleSize 16
+    }
+}
+
+# Disconnect-ExchangeOnline -Confirm:$false
+
+Write-Host "Done. M365 Output written to $365logfilename and Distro Output written to $distrologfilename" -ForegroundColor Green
