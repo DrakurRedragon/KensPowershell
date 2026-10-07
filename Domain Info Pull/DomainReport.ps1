@@ -1,4 +1,4 @@
-# This is designed as a quick information gather on a domain from a DC.  It pulls and creates files for: Every server, OS count, GPOs individually in their own HTML files, accounts login scripts and accounts without them, accounts that have roaming profiles, computers and users that haven't checked in in over 90 days, and every member of a group containing Admin in the name
+# This is designed as a quick information gather on a domain from a DC.  It pulls and creates files for: Every server, OS count, GPOs individually in their own HTML files, accounts login scripts and accounts without them, accounts that have roaming profiles, accounts with home directories, computers and users that haven't checked in in over 90 days, and every member of a group containing Admin in the name
 
 # Define the folder path
 $folderPath = "C:\Temp\DomainReport"
@@ -106,3 +106,13 @@ $profilepath += get-aduser -Identity $user.DistinguishedName -Properties Name,Pr
 }
 $profilepath | Export-CSV -Path $folderPath\ProfilePath.csv
 Write-Host "Roaming Profile file created"
+
+# This is designed to pull every user in the domain, then provide users with Home Directories set in AD. 
+$users = get-aduser -filter *
+$homedrive = @()
+foreach($user in $users)
+{
+$homedrive += get-aduser -Identity $user.DistinguishedName -Properties Name,HomeDrive,HomeDirectory,Enabled,DistinguishedName | where -Property HomeDirectory -NotLike '' | Select Name,Enabled,DistinguishedName,HomeDrive,HomeDirectory
+}
+$homedrive | Export-CSV -Path C:\Temp\HomeDir.csv
+Write-Host "Home Directory file created"
